@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Quiz Ôn Tập Địa Lý 12 — MIX</title>
+<style>
+:root{--bg:#f6f9ff;--card:#fff;--accent:#3b82f6;--muted:#6b7280;--danger:#ef4444;--radius:12px}
+*{box-sizing:border-box;font-family:Inter, Roboto, Arial, sans-serif}
+body{margin:0;min-height:100vh;background:linear-gradient(180deg,#f6f9ff,#eef6ff);display:flex;align-items:center;justify-content:center;padding:20px}
+.container{width:min(980px,96vw);background:var(--card);border-radius:14px;padding:18px;box-shadow:0 14px 50px rgba(16,24,40,0.08)}
+.header{display:flex;justify-content:space-between;align-items:center}
+.title{font-weight:800;font-size:1.05rem}
+.meta{color:var(--muted);font-size:0.9rem}
+.progress{height:12px;background:#eef4ff;border-radius:999px;overflow:hidden;margin-top:12px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#06b6d4);transition:width .35s}
+.card{margin-top:14px;padding:14px;border-radius:12px;background:linear-gradient(180deg,#fff,#fcfeff);min-height:220px;display:flex;flex-direction:column}
+.qtext{font-weight:700;font-size:1.05rem;margin-bottom:12px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.choice{padding:10px;border-radius:10px;border:1px solid #e8f0ff;background:white;cursor:pointer}
+.choice.correct{border-color:#10b981;background:#ecfdf5}
+.choice.wrong{border-color:var(--danger);background:#fff1f2}
+.controls{display:flex;gap:8px;justify-content:space-between;margin-top:auto;align-items:center}
+.btn{padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:white;cursor:pointer;font-weight:700}
+.small{font-size:0.9rem;color:var(--muted)}
+.input-ds{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-bottom:12px}
+.input-ds input{width:48px;padding:8px;border-radius:8px;border:1px solid #e6eefc;text-align:center;font-weight:700}
+.input-num input{width:120px;padding:8px;border-radius:8px;border:1px solid #e6eefc}
+.feedback{min-height:20px;font-weight:700;margin-left:8px}
+.footer{margin-top:12px;text-align:center;color:var(--muted)}
+.table-review{width:100%;border-collapse:collapse;margin-top:12px}
+.table-review th,.table-review td{border:1px solid #eef4ff;padding:8px;text-align:left}
+.correct-answer-text { color: #10b981; font-weight: 600; margin-top: 5px;}
+@media (max-width:720px){.choices{grid-template-columns:1fr}.input-num input{width:100%}}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="header">
+    <div>
+      <div class="title">Quiz ôn tập — Địa Lý</div>
+      <div class="meta">25 MCQs • 6 Đ/S • 12 câu số</div>
+    </div>
+    <div class="small">Không giới hạn thời gian</div>
+  </div>
+
+  <div class="progress" aria-hidden><div class="fill" id="fill"></div></div>
+
+  <div class="card" id="card">
+    <div class="qtext" id="qtext">...</div>
+    <div id="content"></div>
+    <div class="controls">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="prev">Quay lại</button>
+        <button class="btn" id="skip">Bỏ qua</button>
+        <button class="btn" id="show-answer">Xem đáp án</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="small">Câu <span id="pos">0</span>/<span id="total">0</span></div>
+        <div class="small">Điểm: <strong id="score">0</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer" id="footer">Sau khi hoàn thành, bạn sẽ thấy tổng điểm và có thể tải CSV đáp án.</div>
+</div>
+
+<script>
+// --- DATA: lấy trực tiếp từ file gốc (Phần I - 25 câu; Phần II - 6 câu nhóm; Phần III - 12 câu số)
+// Part I: 25 MCQs (Văn bản rút từ file gốc)
+const partI = [
+{type:'mcq', q:"Câu 1. Biểu hiện của chuyển dịch trong nội bộ ngành công nghiệp nước ta hiện nay là", choices:["A. đa dạng thành phần kinh tế trong công nghiệp.","B. ưu tiên phát triển một số ngành công nghệ cao.","C. đẩy mạnh xây dựng khu công nghiệp tập trung.","D. mở rộng các trung tâm công nghiệp quy mô lớn."], answer:0},
+{type:'mcq', q:"Câu 2. Ở nước ta hiện nay, trong nội bộ nhóm ngành nông nghiệp, lâm nghiệp và thuỷ sản đang có sự chuyển dịch theo hướng", choices:["A. giảm tỉ trọng trồng trọt, tăng tỉ trọng chăn nuôi và thuỷ sản.","B. tăng tỉ trọng trồng trọt, giảm tỉ trọng chăn nuôi và thuỷ sản.","C. tăng tỉ trọng trồng trọt và chăn nuôi, giảm tỉ trọng thuỷ sản.","D. giảm tỉ trọng trồng trọt và thuỷ sản, tăng tỉ trọng chăn nuôi."], answer:0},
+{type:'mcq', q:"Câu 3. Cơ cấu kinh tế theo thành phần kinh tế của nước ta đang có sự chuyển dịch theo hướng nào sau đây?", choices:["A. Tăng tỉ trọng kinh tế Nhà nước, giảm tỉ trọng khu vực có vốn đầu tư nước ngoài.","B. Giảm tỉ trọng kinh tế Nhà nước, tăng tỉ trọng kinh tế ngoài Nhà nước.","C. Giảm tỉ trọng khu vực có vốn đầu tư nước ngoài, tăng tỉ trọng kinh tế ngoài Nhà nước.","D. Giảm tỉ trọng kinh tế ngoài Nhà nước, tăng tỉ trọng kinh tế Nhà nước."], answer:1},
+{type:'mcq', q:"Câu 4. Thành phần kinh tế nào sau đây ở nước ta giữ vai trò định hướng và điều tiết phát triển kinh tế – xã hội hiện nay?", choices:["A. Kinh tế tập thể, hợp tác xã.","B. Kinh tế ngoài Nhà nước.","C. Khu vực có vốn đầu tư nước ngoài.","D. Kinh tế Nhà nước."], answer:3},
+{type:'mcq', q:"Câu 5. Đặc điểm nào sau đây đúng với các đô thị nước ta hiện nay?", choices:["A. Có sức hút đối với đầu tư, nhiều lao động kĩ thuật.","B. Thúc đẩy tăng trưởng kinh tế, quy mô lớn là chính.","C. Có cơ sở vật chất hiện đại, phân bố đều ở các vùng.","D. Chỉ sản xuất công nghiệp, tạo ra nhiều việc làm mới."], answer:0},
+{type:'mcq', q:"Câu 6. Phát biểu nào sau đây không đúng về đặc điểm phân bố dân cư nước ta?", choices:["A. Không đều giữa đồng bằng với miền núi.","B. Mật độ dân số trung bình khá cao.","C. Trong một vùng, dân cư phân bố đồng đều.","D. Không đều giữa thành thị với nông thôn."], answer:2},
+{type:'mcq', q:"Câu 7. Đặc điểm nào sau đây không phải là biểu hiện của quá trình đô thị hóa?", choices:["A. Tỉ lệ dân nông thôn có xu hướng tăng.","B. Dân cư thành thị có xu hướng tăng.","C. Dân cư tập trung vào thành phố lớn.","D. Phổ biến rộng rãi lối sống thành thị."], answer:0},
+{type:'mcq', q:"Câu 8. Trung du và miền núi nước ta có mật độ dân số thấp hơn vùng đồng bằng là do", choices:["A. có lịch sử khai thác lãnh thổ sớm hơn đồng bằng.","B. cơ sở vật chất kĩ thuật của các ngành còn lạc hậu.","C. quỹ đất chủ yếu dành cho phát triển công nghiệp.","D. có điều kiện tự nhiên và kinh tế - xã hội khó khăn."], answer:3},
+{type:'mcq', q:"Câu 9. Phát biểu nào sau đây đúng về mật độ dân số nước ta?", choices:["A. Ngày càng giảm.","B. Ngày càng tăng.","C. Ít biến động.","D. Mật độ thấp."], answer:1},
+{type:'mcq', q:"Câu 10. Đẩy mạnh phát triển công nghiệp ở trung du và miền núi nước ta nhằm mục đích chủ yếu nào sau đây?", choices:["A. Giảm tỉ lệ gia tăng dân số, giải quyết việc làm.","B. Phân bố lại dân cư và lao động giữa các vùng.","C. Tăng dân tỉ lệ dân thành thị trong cơ cấu dân số.","D. Phát huy truyền thống sản xuất các tộc ít người."], answer:1},
+{type:'mcq', q:"Câu 11. Chất lượng nguồn lao động của nước ta ngày càng được nâng cao chủ yếu là do", choices:["A. số lượng lao động trong các công ty liên doanh tăng lên.","B. phát triển mạnh ngành công nghiệp và dịch vụ nông thôn.","C. những thành tựu trong phát triển văn hóa, giáo dục, y tế.","D. mở thêm nhiều các trung tâm đào tạo và hướng nghiệp."], answer:2},
+{type:'mcq', q:"Câu 12. Năng suất lao động trong hoạt động khai thác thuỷ sản ở nước ta còn thấp chủ yếu do", choices:["A. phương tiện khai thác chậm đổi mới.","B. người dân thiếu kinh nghiệm đánh bắt.","C. nguồn lợi thuỷ sản đang bị suy thoái.","D. thời tiết, khí hậu diễn biến thất thường."], answer:0},
+{type:'mcq', q:"Câu 13. Biện pháp chủ yếu để giải quyết tình trạng thiếu việc làm ở nông thôn nước ta hiện nay là", choices:["A. tập trung thâm canh tăng vụ.","B. đa dạng hóa các hoạt động kinh tế ở nông thôn.","C. ra thành phố tìm kiếm việc làm.","D. phát triển ngành thủ công nghiệp ở nông thôn."], answer:1},
+{type:'mcq', q:"Câu 14. Quá trình phân công lao động xã hội ở nước ta chậm chuyển biến, chủ yếu là do", choices:["A. năng suất và thu nhập của lao động còn thấp.","B. cơ sở hạ tầng kinh tế chưa phát triển đồng bộ.","C. chưa sử dụng triệt để quỹ thời gian lao động.","D. tỉ lệ thất nghiệp và thiếu việc làm còn cao."], answer:0},
+{type:'mcq', q:"Câu 15. Ý nghĩa chủ yếu của sự chuyển dịch cơ cấu kinh tế ở", choices:["A. đổi mới công nghệ, sử dụng hợp lí các nguồn lực.","B. thúc đẩy tăng trưởng kinh tế, phát triển bền vững.","C. nâng cao sức cạnh tranh, thúc đẩy hội nhập quốc tế.","D. thay đổi cơ cấu lao động, thích ứng biến đổi khí hậu."], answer:1},
+{type:'mcq', q:"Câu 16: Cho biểu đồ: Biểu đồ thể hiện nội dung nào sau đây?", choices:["A. Tốc độ tăng trưởng nguồn vốn đầu tư toàn xã hội theo thành phần kinh tế.","B. Quy mô, tốc độ tăng nguồn vốn đầu tư toàn xã hội theo thành phần kinh tế.","C. Quy mô và cơ cấu nguồn vốn đầu tư toàn xã hội theo thành phần kinh tế.","D. Cơ cấu, tốc độ tăng nguồn vốn đầu tư toàn xã hội theo thành phần kinh tế."], answer:0},
+{type:'mcq', q:"Câu 17. Tỉ trọng khu vực có vốn đầu tư nước ngoài trong cơ cấu kinh tế Việt Nam hiện nay có xu hướng tăng là do", choices:["A. nước ta có tài nguyên thiên nhiên đa dạng, dồi dào.","B. vị trí địa lí nước ta thuận lợi cho giao thương quốc tế.","C. chính sách mở cửa hội nhập ngày càng sâu, rộng.","D. nước ta có nguồn lao động dồi dào, chất lượng cao."], answer:2},
+{type:'mcq', q:"Câu 18. Cho bảng số liệu: Biểu đồ nào thích hợp để thể hiện cơ cấu lao động theo thành phần kinh tế của nước ta giai đoạn trên?", choices:["A. Tròn","B. Đường","C. Miền","D. Cột chồng"], answer:0},
+{type:'mcq', q:"Câu 19: Phát biểu nào sau đây không đúng với các thành phố và thị xã ở nước ta?", choices:["A. Là thị trường tiêu thụ sản phẩm hàng hóa lớn, đa dạng.","B. Tạo ra động lực cho sự tăng trưởng, phát triển kinh tế.","C. Là nơi sử dụng nhiều lao động có chuyên môn kĩ thuật.","D. Cơ sở vật chất kĩ thuật hiện đại, có sức hút vốn đầu tư"], answer:3},
+{type:'mcq', q:"Câu 20. Cơ cấu thành phần kinh tế nước ta đang có sự chuyển dịch theo hướng", choices:["A. giảm tỉ trọng khu vực kinh tế Nhà nước và khu vực có vốn đầu tư nước ngoài.","B. tăng tỉ trọng khu vực kinh tế ngoài Nhà nước và khu vực có vốn đầu tư nước ngoài.","C. tăng tỉ trọng kinh tế Nhà nước, giảm tỉ trọng khu vực có vốn đầu tư nước ngoài.","D. tăng nhanh tỉ trọng khu vực kinh tế Nhà nước và kinh tế ngoài Nhà nước."], answer:1},
+{type:'mcq', q:"Câu 21. Tỉ trọng khu vực có vốn đầu tư nước ngoài trong cơ cấu kinh tế Việt Nam hiện nay có xu hướng tăng chủ yếu do", choices:["A. nước ta có tài nguyên thiên nhiên đa dạng, dồi dào.","B. vị trí địa lí nước ta thuận lợi cho giao thương quốc tế.","C. chính sách mở cửa hội nhập ngày càng sâu, rộng.","D. nước ta có nguồn lao động dồi dào, chất lượng cao."], answer:2},
+{type:'mcq', q:"Câu 22. Thành phần kinh tế nào sau đây ở nước ta giữ vai trò lớn nhất trong việc mở rộng thị trường xuất khẩu hiện nay?", choices:["A. Kinh tế tập thể, hợp tác xã.","B. Kinh tế ngoài Nhà nước.","C. Khu vực có vốn đầu tư nước ngoài.","D. Kinh tế tư nhân."], answer:2},
+{type:'mcq', q:"Câu 23. Thành phần kinh tế nào sau đây ở nước ta giữ vai trò định hướng và điều tiết phát triển kinh tế – xã hội hiện nay?", choices:["A. Kinh tế tập thể, hợp tác xã.","B. Kinh tế ngoài Nhà nước.","C. Khu vực có vốn đầu tư nước ngoài.","D. Kinh tế Nhà nước."], answer:3},
+{type:'mcq', q:"Câu 24. Vai trò chủ đạo trong nền kinh tế của kinh tế Nhà nước thể hiện qua việc thành phần này", choices:["A. chiếm tỉ trọng cao nhất và ngày càng tăng trong cơ cấu GDP.","B. thu hút được nhiều lao động và tạo ra nguồn vốn đầu tư lớn.","C. ổn định kinh tế vĩ mô và nắm giữ các ngành kinh tế then chốt.","D. tạo động lực phát triển kinh tế và giải quyết nhiều việc làm."], answer:2},
+{type:'mcq', q:"Câu 25. Nhân tố tác động chủ yếu đến chuyển dịch cơ cấu thành phần kinh tế ở nước ta hiện nay là", choices:["A. sự phát triển của quá trình công nghiệp hoá.","B. sự chuyển dịch cơ cấu lao động theo ngành.","C. đường lối phát triển nền kinh tế thị trường.","D. chính sách ưu tiên các ngành công nghệ cao."], answer:2}
+];
+
+// Part II: 6 questions, each with 4 statements (we will present as one question with 4 small DS inputs)
+// Answers (from file): Câu1 → Đ – S – Đ - S ; Câu2 → S – Đ – Đ - Đ ; Câu3 → S – Đ – S - Đ ; Câu4 → S – Đ – S - Đ ; Câu5 → S – Đ – Đ - S ; Câu6 → Đ – S – S - Đ
+const partII = [
+{type:'dsgroup', q:"II.1: (Bảng số liệu GDP ngành) Các phát biểu:",stm:["a) Cơ cấu ngành kinh tế chuyển dịch theo hướng công nghiệp hoá, hiện đại hoá.","b) Tỉ trọng công nghiệp, xây dựng cao nhất và tăng liên tục.","c) Tỉ trọng ngành dịch vụ tăng nhưng không liên tục.","d) Tỉ trọng nông nghiệp, lâm nghiệp và thuỷ sản giảm chủ yếu do biến đổi khí hậu."],answer:["Đ","S","Đ","S"]},
+{type:'dsgroup', q:"II.2: (Cơ cấu GDP theo thành phần kinh tế) Các phát biểu:",stm:["a) Tỉ trọng thành phần kinh tế Nhà nước nhỏ nhất và giảm liên tục.","b) Tỉ trọng thành phần kinh tế ngoài Nhà nước luôn cao nhất.","c) Khu vực có vốn đầu tư nước ngoài chiếm tỉ trọng thấp và tăng liên tục.","d) Tỉ trọng khu vực có vốn đầu tư nước ngoài tăng lên do nước ta mở cửa, hội nhập."],answer:["S","Đ","Đ","Đ"]},
+{type:'dsgroup', q:"II.3: (Dân số cao tuổi) Các phát biểu:",stm:["a) Dân số nước ta bước vào thời kì “già hoá” khi người cao tuổi chiếm tỉ lệ lớn nhất trong tổng dân số.","b) Già hoá dân số Việt Nam do giảm tỉ suất tử vong và tăng tuổi thọ.","c) Già hoá dân số Việt Nam phần lớn là nhờ tăng mạnh tỉ suất sinh.","d) Già hoá dân số nhanh chóng có thể dẫn đến tình trạng thiếu lao động trong tương lai."],answer:["S","Đ","S","Đ"]},
+{type:'dsgroup', q:"II.4: (Diện tích gieo trồng và sản lượng lúa) Các phát biểu:",stm:["a) Diện tích gieo trồng và sản lượng lúa đều tăng liên tục.","b) Từ năm 2010 đến 2021 sản lượng lúa tăng 1,1 lần.","c) Diện tích gieo trồng lúa thấp nhất vào năm 2010.","d) Sản lượng lúa cao nhất vào năm 2015."],answer:["S","Đ","S","Đ"]},
+{type:'dsgroup', q:"II.5: (Thất nghiệp & thiếu việc làm 2022) Các phát biểu:",stm:["a) Tỉ lệ thất nghiệp giữa thành thị và nông thôn bằng nhau.","b) Tỉ lệ thiếu việc làm ở nông thôn cao hơn thành thị.","c) Ở nông thôn, tỉ lệ thất nghiệp thấp hơn tỉ lệ thiếu việc làm do đặc điểm của hoạt động sản xuất.","d) Biểu đồ tròn là dạng biểu đồ thích hợp nhất thể hiện tỉ lệ thiếu việc làm phân theo khu vực thành thị và nông thôn ở nước ta năm 2022."],answer:["S","Đ","Đ","S"]},
+{type:'dsgroup', q:"II.6: (Đô thị hoá 2019) Các phát biểu:",stm:["a) Đô thị hoá diễn ra đồng đều giữa các vùng.","b) Tỉ lệ dân thành thị của nước ta cao so với các nước trên thế giới.","c) Đô thị hoá chỉ phụ thuộc vào công nghiệp hoá.","d) Đô thị hoá làm thay đổi cơ cấu lao động theo ngành kinh tế."],answer:["Đ","S","S","Đ"]}
+];
+
+// Part III: 12 short numeric answers (from file)
+const partIII = [
+{type:'num', q:"III.1. Biết ở nước ta GDP ngành dịch vụ năm 2010 là 1113126 tỉ đồng, năm 2020 là 3365060 tỉ đồng. Tính năm 2020 tăng gấp bao nhiêu lần so với năm 2010? (Làm tròn đến hàng đơn vị)", answer:"3"},
+{type:'num', q:"III.2. Biết ở nước ta GDP công nghiệp xây dựng năm 2010 là 904775, năm 2020 là 2561274 tỉ đồng. Tính Tốc độ tăng trưởng GDP của công nghiệp năm 2020 so với năm 2010? (làm tròn đến số hàng đơn vị)", answer:"283"},
+{type:'num', q:"III.3. Biết năm 2018 ở nước ta, diện tích rừng là 14,5 triệu ha, diện tích đất tự nhiên 33,1 triệu ha. Tính tỉ lệ che phủ rừng của nước ta năm 2018 (làm tròn kết quả đến số thập phân thứ nhất)", answer:"43,8"},
+{type:'num', q:"III.4. Năm 2022, trị giá xuất khẩu hàng hóa của nước ta là 371,3 tỉ đô la Mỹ, trị giá nhập khẩu hàng hóa là 358,9 tỉ đô la Mỹ. Tính tổng kim ngạch xuất nhập khẩu của nước ta năm 2022. (làm tròn kết quả đến hàng đơn vị).", answer:"730"},
+{type:'num', q:"III.5. Biết năm 2020 ở nước ta, diện tích gieo trông lúa là 7,3 triệu ha, sản lượng lúa là 42,7 triệu tấn. Tính năng suất lúa của nước ta năm 2020 (đơn vị tính tạ/ha, làm tròn kết quả đến hàng thập phân thứ nhất)", answer:"58,5"},
+{type:'num', q:"III.6. Biết năm 2021 ở nước ta, sản lượng lúa là 43,9 triệu tấn, năng suất lúa là 61 tạ/ha. Tính diện tích lúa của nước ta năm 2021 (đơn vị tính: triệu ha, làm tròn kết quả đến hàng thập phân thứ nhất).", answer:"7,2"},
+{type:'num', q:"III.7. Biết năm 2021 ở nước ta, dân số nam là 49 092 700 người, dân số nữ là 49 411 700 người. Tính tỉ lệ giới tính nam của nước ta năm 2021 (đơn vị tính: %, làm tròn kết quả đến một chữ số của phần thập phân).", answer:"99,4"},
+{type:'num', q:"III.8. Biết năm 2021 ở nước ta, dân số là 98,5 triệu người, lực lượng lao động từ 15 tuổi trở lên là 50,6 triệu người. Tính tỉ lệ lao động so với tổng số dân của nước ta năm 2021 (đơn vị tính: %, làm tròn kết quả đến hàng đơn vị).", answer:"51"},
+{type:'num', q:"III.9. Biết ở nước ta năm 2021, GDP đạt 8487,5 nghìn tỉ đồng, GDP của nhóm ngành nông nghiệp, lâm nghiệp và thuỷ sản là 1069,7 nghìn tỉ đồng. Tính tỉ trọng GDP của khu vực nông nghiệp, lâm nghiệp và thuỷ sản của nước ta năm 2021 (đơn vị tính: %, làm tròn kết quả đến hàng đơn vị).", answer:"13"},
+{type:'num', q:"III.10. Biết ở nước ta, năm 2000 GDP đạt 441 nghìn tỉ đồng, năm 2021 GDP đạt 8487,5 nghìn tỉ đồng. Coi GDP năm 2000 là 100 %, tính tốc độ tăng trưởng GDP năm 2021 (đơn vị tính: %, làm tròn kết quả đến hàng đơn vị).", answer:"1925"},
+{type:'num', q:"III.11. Biết ở nước ta năm 2021, GDP đạt 8487,5 nghìn tỉ đồng, tổng số dân nước ta là 98,5 triệu người. Tính GDP bình quân trên đầu người của nước ta năm 2021 (đơn vị tính: triệu đồng/người, làm tròn kết quả đến hàng đơn vị)", answer:"86"},
+{type:'num', q:"III.12. Bảng GDP (gồm các phần) — a) GDP của nước ta năm 2020 gấp bao nhiêu lần so với năm 2010? b) GDP của nước ta năm 2020 tăng bao nhiêu % so với năm 2010? (Trả lời a và b, cách nhau bằng dấu '/')", answer:"2,77/177,11"}
+];
+
+// build combined pool and then shuffle (user chose 1A => randomize everything)
+let pool = [];
+partI.forEach(it=>pool.push(it));
+partII.forEach(it=>pool.push(it));
+partIII.forEach(it=>pool.push(it));
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+pool = shuffle(pool);
+
+// state
+let idx=0; let score=0; const total=pool.length;
+document.getElementById('total').textContent = total;
+document.getElementById('pos').textContent = 1;
+document.getElementById('score').textContent = score;
+updateProgress();
+
+let answeredCurrentQuestion = false;
+
+function updateProgress(){const pct = Math.round(((idx+1)/total)*100); document.getElementById('fill').style.width = pct+'%'; document.getElementById('pos').textContent = Math.min(idx+1,total); document.getElementById('score').textContent = score;}
+
+function render(){
+  const item = pool[idx];
+  const qtext = document.getElementById('qtext');
+  const content = document.getElementById('content');
+  content.innerHTML='';
+  answeredCurrentQuestion = false; // Reset trạng thái khi chuyển câu hỏi
+  document.getElementById('show-answer').disabled = false; // Kích hoạt nút xem đáp án
+
+  if(item.type==='mcq'){
+    qtext.textContent = item.q;
+    const wrap = document.createElement('div'); wrap.className='choices';
+    item.choices.forEach((c,i)=>{
+      const b = document.createElement('button'); b.className='choice'; b.type='button'; b.innerHTML = c; b.onclick = ()=>selectMCQ(i,b,item);
+      wrap.appendChild(b);
+    });
+    content.appendChild(wrap);
+  } else if(item.type==='dsgroup'){
+    qtext.textContent = item.q;
+    const wrap = document.createElement('div'); wrap.className='input-ds';
+    // display each statement with small input
+    item.stm.forEach((s,i)=>{
+      const block = document.createElement('div'); block.style.minWidth='220px';
+      const p = document.createElement('div'); p.textContent = s; p.style.marginBottom='6px'; p.style.fontWeight='600';
+      const inp = document.createElement('input'); inp.maxLength=2; inp.dataset.idx=i; inp.placeholder='Đ/S'; inp.style.textTransform='uppercase';
+      block.appendChild(p); block.appendChild(inp); wrap.appendChild(block);
+    });
+    content.appendChild(wrap);
+    const checkBtn = document.createElement('button'); checkBtn.className='btn'; checkBtn.textContent='Kiểm tra'; checkBtn.onclick = ()=>checkDS(item, wrap);
+    content.appendChild(checkBtn);
+    const fb = document.createElement('div'); fb.className='feedback'; content.appendChild(fb);
+  } else if(item.type==='num'){
+    qtext.textContent = item.q;
+    const wrap = document.createElement('div'); wrap.className='input-num';
+    const inp = document.createElement('input'); inp.placeholder='Nhập đáp án (số)'; inp.type='text'; inp.style.fontWeight='700';
+    wrap.appendChild(inp);
+    content.appendChild(wrap);
+    const checkBtn = document.createElement('button'); checkBtn.className='btn'; checkBtn.textContent='Kiểm tra'; checkBtn.onclick = ()=>checkNum(item, inp);
+    content.appendChild(checkBtn);
+    const fb = document.createElement('div'); fb.className='feedback'; content.appendChild(fb);
+  }
+  updateProgress();
+}
+
+function selectMCQ(choiceIdx, btn, item){
+  if (answeredCurrentQuestion) return; // Ngăn không cho chọn lại
+  answeredCurrentQuestion = true;
+  document.getElementById('show-answer').disabled = true; // Vô hiệu hóa nút xem đáp án sau khi đã trả lời
+
+  // disable choices
+  const buttons = document.querySelectorAll('.choice');
+  buttons.forEach(b=>b.disabled=true);
+  const correct = choiceIdx === item.answer;
+  if(correct){ btn.classList.add('correct'); score++; document.querySelector('.feedback')?.remove(); }
+  else { btn.classList.add('wrong'); // highlight correct
+    buttons[item.answer]?.classList.add('correct');
+  }
+  // show feedback under content
+  const fb = document.createElement('div'); fb.className='feedback'; fb.style.marginLeft='8px';
+  fb.textContent = correct ? '✓ Đúng' : ('✗ Sai — đáp án đúng: ' + item.choices[item.answer]);
+  document.getElementById('content').appendChild(fb);
+  // advance after short delay
+  setTimeout(()=>{ idx++; if(idx>=total) finish(); else render(); }, correct?600:1400);
+}
+
+function checkDS(item, wrap){
+  if (answeredCurrentQuestion) return;
+  const inputs = wrap.querySelectorAll('input');
+  let allFilled=true; let correctCount=0;
+  inputs.forEach((inp,i)=>{
+    const val = (inp.value || '').trim().toUpperCase();
+    if(!val || (val !== 'Đ' && val !== 'S')) allFilled=false;
+    if(val === item.answer[i]){ inp.style.borderColor='#10b981'; correctCount++; }
+    else inp.style.borderColor='var(--danger)';
+  });
+  const fb = document.querySelector('#content .feedback');
+  if(!allFilled){ fb.textContent = 'Vui lòng điền Đ hoặc S cho tất cả.'; fb.style.color='var(--danger)'; return; }
+
+  answeredCurrentQuestion = true;
+  document.getElementById('show-answer').disabled = true; // Vô hiệu hóa nút xem đáp án sau khi đã trả lời
+
+  // scoring: each đúng = 1 point; show correct/incorrect; then advance
+  score += correctCount;
+  fb.textContent = `Bạn đúng ${correctCount} / ${inputs.length} phát biểu.`;
+  fb.style.color = '';
+  setTimeout(()=>{ idx++; if(idx>=total) finish(); else render(); }, 1000);
+}
+
+function checkNum(item, inp){
+  if (answeredCurrentQuestion) return;
+  const val = (inp.value || '').trim().replace(',', '.'); // accept comma or dot
+  const fb = document.querySelector('#content .feedback');
+  if(!val){ fb.textContent='Vui lòng nhập đáp án.'; fb.style.color='var(--danger)'; return; }
+  // Compare numerically if possible, or string match for complex (like "2,77/177,11")
+  const correct = item.answer;
+  let ok=false;
+  if(correct.includes('/')){
+    // split and compare pairs, allow minor rounding diffs: compare numbers up to 2 decimals
+    const partsC = correct.split('/').map(s=>s.replace(',', '.').trim());
+    const partsV = val.split('/').map(s=>s.replace(',', '.').trim());
+    if(partsC.length === partsV.length){
+      ok = true;
+      for(let i=0;i<partsC.length;i++){
+        const a = parseFloat(partsC[i]); const b = parseFloat(partsV[i]);
+        if(isNaN(a) || isNaN(b) || Math.abs(a-b) > (Math.abs(a)*0.01 + 0.01)){ ok=false; break; }
+      }
+    }
+  } else {
+    const a = parseFloat(correct.replace(',', '.')); const b = parseFloat(val);
+    if(!isNaN(a) && !isNaN(b)){
+      // accept small rounding tolerance: 0.5% or absolute 0.01
+      ok = Math.abs(a-b) <= (Math.abs(a)*0.01 + 0.01);
+    } else {
+      ok = (val === correct);
+    }
+  }
+
+  answeredCurrentQuestion = true;
+  document.getElementById('show-answer').disabled = true; // Vô hiệu hóa nút xem đáp án sau khi đã trả lời
+
+  if(ok){ fb.textContent='✓ Đúng'; fb.style.color=''; score++; }
+  else { fb.textContent = '✗ Sai — đáp án đúng: ' + correct; fb.style.color='var(--danger)'; }
+  setTimeout(()=>{ idx++; if(idx>=total) finish(); else render(); }, ok?600:1400);
+}
+
+document.getElementById('prev').addEventListener('click', ()=>{ if(idx>0){ idx--; render(); } });
+document.getElementById('skip').addEventListener('click', ()=>{ idx++; if(idx>=total) finish(); else render(); });
+document.getElementById('show-answer').addEventListener('click', showAnswer);
+
+function showAnswer() {
+    const item = pool[idx];
+    const content = document.getElementById('content');
+
+    if (item.type === 'mcq') {
+        const buttons = document.querySelectorAll('.choice');
+        buttons.forEach((b, i) => {
+            b.disabled = true; // Vô hiệu hóa các lựa chọn
+            if (i === item.answer) {
+                b.classList.add('correct');
+            }
+        });
+        const fb = document.createElement('div');
+        fb.className = 'feedback correct-answer-text';
+        fb.textContent = 'Đáp án đúng: ' + item.choices[item.answer];
+        content.appendChild(fb);
+    } else if (item.type === 'dsgroup') {
+        const inputs = content.querySelectorAll('.input-ds input');
+        inputs.forEach((inp, i) => {
+            inp.disabled = true; // Vô hiệu hóa ô nhập liệu
+            inp.value = item.answer[i]; // Hiển thị đáp án đúng
+            inp.style.borderColor = '#10b981'; // Đánh dấu màu xanh
+        });
+        const fb = document.createElement('div');
+        fb.className = 'feedback correct-answer-text';
+        fb.textContent = 'Đáp án đúng: ' + item.answer.join(' - ');
+        content.appendChild(fb);
+    } else if (item.type === 'num') {
+        const input = content.querySelector('.input-num input');
+        input.disabled = true; // Vô hiệu hóa ô nhập liệu
+        input.value = item.answer; // Hiển thị đáp án đúng
+        input.style.borderColor = '#10b981'; // Đánh dấu màu xanh
+        const fb = document.createElement('div');
+        fb.className = 'feedback correct-answer-text';
+        fb.textContent = 'Đáp án đúng: ' + item.answer;
+        content.appendChild(fb);
+    }
+    // Sau khi xem đáp án, người dùng không thể trả lời câu hỏi này nữa
+    answeredCurrentQuestion = true;
+    document.getElementById('show-answer').disabled = true; // Vô hiệu hóa nút xem đáp án
+    // Tự động chuyển câu hỏi sau một thời gian
+    setTimeout(()=>{ idx++; if(idx>=total) finish(); else render(); }, 2000);
+}
+
+
+function finish(){
+  // show summary and allow CSV download
+  const app = document.getElementById('app');
+  app.innerHTML = `<div style="text-align:center"><h2>Hoàn thành!</h2><p>Bạn đạt <strong>${score}</strong> điểm trên <strong>${total}</strong></p>`;
+  const btns = document.createElement('div'); btns.style.marginTop='12px'; btns.style.display='flex'; btns.style.justifyContent='center'; btns.style.gap='8px';
+  const again = document.createElement('button'); again.className='btn'; again.textContent='Làm lại (xáo lại)'; again.onclick = ()=>{ location.reload(); };
+  const dl = document.createElement('button'); dl.className='btn'; dl.textContent='Tải CSV câu/đáp án đúng'; dl.onclick = downloadCSV;
+  btns.appendChild(again); btns.appendChild(dl);
+  app.appendChild(btns);
+}
+
+function downloadCSV(){
+  const rows = [['Loại','Câu','Nội dung','Đáp án đúng']];
+  pool.forEach((it,i)=>{
+    if(it.type==='mcq') rows.push(['MCQ', i+1, it.q, it.choices[it.answer]]);
+    else if(it.type==='dsgroup') rows.push(['Đ/S group', i+1, it.q + ' | ' + it.stm.join(' || '), it.answer.join(' - ')]);
+    else if(it.type==='num') rows.push(['Số', i+1, it.q, it.answer]);
+  });
+  const csv = rows.map(r=>r.map(c=>'\"'+String(c).replace(/\"/g,'\"\"')+'\"').join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'quiz_key_and_questions.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>
