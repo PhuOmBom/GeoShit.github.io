@@ -1,2 +1,1 @@
-# GeoShit.github.io
-skibidi
+ôn đi các cu
